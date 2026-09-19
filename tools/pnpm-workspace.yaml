@@ -1,0 +1,3 @@
+# No dependency here needs a postinstall script; rules_js requires this to be
+# stated explicitly.
+allowBuilds: {}

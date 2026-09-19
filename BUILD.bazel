@@ -1,0 +1,32 @@
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
+load("@rules_kotlin//kotlin:core.bzl", "define_kt_toolchain", "kt_compiler_plugin")
+
+package(default_visibility = ["//visibility:public"])
+
+define_kt_toolchain(
+    name = "kotlin_toolchain",
+    jvm_target = "17",
+)
+
+# Where the app fetches its workouts from. Override for local testing with
+# bazel build //app --//:workouts_url=http://10.0.2.2:8000/workouts.json
+string_flag(
+    name = "workouts_url",
+    build_setting_default = "https://aaronj1335.github.io/workout/workouts.json",
+)
+
+kt_compiler_plugin(
+    name = "compose_plugin",
+    id = "androidx.compose.compiler.plugins.kotlin",
+    target_embedded_compiler = True,
+    deps = ["@maven//:org_jetbrains_kotlin_kotlin_compose_compiler_plugin_embeddable"],
+)
+
+kt_compiler_plugin(
+    name = "serialization_plugin",
+    id = "org.jetbrains.kotlinx.serialization",
+    stubs_phase = True,
+    compile_phase = True,
+    target_embedded_compiler = True,
+    deps = ["@maven//:org_jetbrains_kotlin_kotlin_serialization_compiler_plugin_embeddable"],
+)

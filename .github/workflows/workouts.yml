@@ -1,11 +1,10 @@
 name: Workouts
 
-# Compiles workouts/*.yaml into dist/workouts.json and publishes it on GitHub Pages.
-# Pull requests are validated only; pushes to main deploy.
+# Compiles workouts/*.yaml into workouts.json and publishes it on GitHub Pages.
+# Pull requests are validated by the CI workflow; pushes to main deploy.
 on:
   push:
     branches: [main]
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -20,24 +19,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: bazel-contrib/setup-bazel@0.19.0
         with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: tools/package-lock.json
-      - name: Install tools
-        working-directory: tools
-        run: npm ci
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
       - name: Compile workouts
-        working-directory: tools
-        run: npm run build
+        run: |
+          bazel build //workouts:dist
+          # Resolve the bazel-bin symlink and read-only permissions for the upload.
+          cp -rL bazel-bin/workouts/dist dist
+          chmod -R u+w dist
       - uses: actions/upload-pages-artifact@v5
         with:
           path: dist
 
   deploy:
     # Requires Settings -> Pages -> Source: GitHub Actions.
-    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     permissions:

@@ -1,0 +1,40 @@
+load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_library", "js_test")
+load("@npm//:defs.bzl", "npm_link_all_packages")
+
+npm_link_all_packages()
+
+js_library(
+    name = "build_workouts_lib",
+    srcs = [
+        "build-workouts.mjs",
+        "workout.schema.json",
+    ],
+    deps = [
+        ":node_modules/ajv",
+        ":node_modules/js-yaml",
+    ],
+)
+
+# Compiles workouts/*.yaml into workouts.json (+ index.html). See //workouts:dist.
+js_binary(
+    name = "build_workouts",
+    data = [":build_workouts_lib"],
+    entry_point = "build-workouts.mjs",
+    visibility = ["//workouts:__pkg__"],
+)
+
+# Validates every workout against workout.schema.json without writing anything.
+js_test(
+    name = "validate_workouts_test",
+    size = "small",
+    args = [
+        "--check",
+        "--source",
+        "workouts",
+    ],
+    data = [
+        ":build_workouts_lib",
+        "//workouts",
+    ],
+    entry_point = "build-workouts.mjs",
+)

@@ -5,11 +5,15 @@
  * is readable by a human.
  *
  * Usage:
- *   node build-workouts.mjs           compile to dist/
- *   node build-workouts.mjs --check   validate only, write nothing
+ *   node build-workouts.mjs                 compile workouts/ to dist/
+ *   node build-workouts.mjs --check         validate only, write nothing
+ *   node build-workouts.mjs --source DIR    read YAML from DIR (default: workouts/)
+ *   node build-workouts.mjs --out DIR       write to DIR (default: dist/)
+ *
+ * Bazel runs this via //workouts:dist and //workouts:validate_test.
  */
 import { readdirSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv from "ajv";
 import { load } from "js-yaml";
@@ -18,9 +22,10 @@ const CATALOG_VERSION = 1;
 
 const toolsDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(toolsDir, "..");
-const sourceDir = join(repoRoot, "workouts");
-const outputDir = join(repoRoot, "dist");
-const checkOnly = process.argv.includes("--check");
+const args = process.argv.slice(2);
+const checkOnly = args.includes("--check");
+const sourceDir = resolve(option("--source") ?? join(repoRoot, "workouts"));
+const outputDir = resolve(option("--out") ?? join(repoRoot, "dist"));
 
 const schema = JSON.parse(readFileSync(join(toolsDir, "workout.schema.json"), "utf8"));
 const validate = new Ajv({ allErrors: true }).compile(schema);
@@ -110,8 +115,20 @@ writeFileSync(join(outputDir, "index.html"), renderIndex(catalog));
 
 console.log(`Wrote ${rel(join(outputDir, "workouts.json"))}: ${workouts.length} workout(s), ${stepCount} step(s).`);
 
+function option(flag) {
+  const index = args.indexOf(flag);
+  if (index === -1) return undefined;
+  const value = args[index + 1];
+  if (value === undefined || value.startsWith("--")) {
+    console.error(`${flag} needs a directory`);
+    process.exit(2);
+  }
+  return value;
+}
+
 function rel(path) {
-  return path.startsWith(repoRoot) ? path.slice(repoRoot.length + 1) : path;
+  const relativePath = relative(process.cwd(), path);
+  return relativePath.startsWith("..") ? path : relativePath || ".";
 }
 
 function escapeHtml(value) {

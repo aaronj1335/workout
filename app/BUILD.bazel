@@ -1,0 +1,148 @@
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("@rules_android//android:rules.bzl", "android_binary", "android_library")
+load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
+load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library", "kt_jvm_test")
+load(":build_config.bzl", "build_config")
+
+PACKAGE = "andersonstacy.workout"
+
+# The three libraries below are one Kotlin module (see `associates`: the module
+# name is inherited from :data), split so the pure-Kotlin parts can be unit
+# tested without an Android runtime.
+
+# --- Pure Kotlin: catalog model, cache/refresh rules and the session state --
+
+kt_jvm_library(
+    name = "data",
+    srcs = glob(["src/main/java/andersonstacy/workout/data/*.kt"]),
+    module_name = "app",
+    plugins = ["//:serialization_plugin"],
+    deps = [
+        "@maven//:com_squareup_okhttp3_okhttp",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_core",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_serialization_json",
+    ],
+)
+
+kt_jvm_library(
+    name = "domain",
+    srcs = glob(["src/main/java/andersonstacy/workout/domain/*.kt"]),
+    associates = [":data"],
+)
+
+# --- The Wear OS app ---------------------------------------------------------
+
+build_config(
+    name = "build_config",
+    package = PACKAGE,
+    workouts_url = "//:workouts_url",
+)
+
+kt_android_library(
+    name = "lib",
+    srcs = glob(
+        ["src/main/java/**/*.kt"],
+        exclude = [
+            "src/main/java/andersonstacy/workout/data/*.kt",
+            "src/main/java/andersonstacy/workout/domain/*.kt",
+        ],
+    ) + [":build_config"],
+    associates = [
+        ":data",
+        ":domain",
+    ],
+    manifest = "src/main/AndroidManifest.xml",
+    plugins = ["//:compose_plugin"],
+    resource_files = glob(["src/main/res/**"]),
+    deps = [
+        "@maven//:androidx_activity_activity_compose",
+        "@maven//:androidx_compose_material_material_icons_core",
+        "@maven//:androidx_compose_ui_ui",
+        "@maven//:androidx_compose_ui_ui_graphics",
+        "@maven//:androidx_compose_ui_ui_tooling",
+        "@maven//:androidx_compose_ui_ui_tooling_preview",
+        "@maven//:androidx_core_core_splashscreen",
+        "@maven//:androidx_lifecycle_lifecycle_runtime_compose",
+        "@maven//:androidx_lifecycle_lifecycle_viewmodel_compose",
+        "@maven//:androidx_wear_compose_compose_foundation",
+        "@maven//:androidx_wear_compose_compose_material3",
+        "@maven//:androidx_wear_compose_compose_navigation",
+        "@maven//:androidx_wear_compose_compose_ui_tooling",
+        "@maven//:androidx_wear_wear_tooling_preview",
+        "@maven//:com_google_android_gms_play_services_wearable",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_android",
+    ],
+)
+
+# Debug builds may point at a plain-HTTP workouts.json served from a dev
+# machine; release builds (-c opt) must not.
+android_library(
+    name = "debug_manifest",
+    exports_manifest = True,
+    manifest = "src/debug/AndroidManifest.xml",
+)
+
+config_setting(
+    name = "release",
+    values = {"compilation_mode": "opt"},
+)
+
+android_binary(
+    name = "app",
+    # Per-jar dexing cannot see the jars that come in through `associates`.
+    incremental_dexing = 0,
+    # Whole-program dexing does not read minSdkVersion from the manifest.
+    dexopts = ["--min-sdk-version=35"],
+    manifest = "src/main/AndroidManifest.xml",
+    visibility = ["//visibility:public"],
+    deps = [":lib"] + select({
+        ":release": [],
+        "//conditions:default": [":debug_manifest"],
+    }),
+)
+
+build_test(
+    name = "app_build_test",
+    targets = [":app"],
+)
+
+# --- Unit tests --------------------------------------------------------------
+
+TEST_DEPS = [
+    "@maven//:junit_junit",
+    "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_test",
+]
+
+kt_jvm_test(
+    name = "WorkoutCatalogTest",
+    size = "small",
+    srcs = ["src/test/java/andersonstacy/workout/data/WorkoutCatalogTest.kt"],
+    test_class = PACKAGE + ".data.WorkoutCatalogTest",
+    deps = [":data"] + TEST_DEPS,
+)
+
+kt_jvm_test(
+    name = "WorkoutRepositoryTest",
+    size = "small",
+    srcs = ["src/test/java/andersonstacy/workout/data/WorkoutRepositoryTest.kt"],
+    test_class = PACKAGE + ".data.WorkoutRepositoryTest",
+    deps = [":data"] + TEST_DEPS,
+)
+
+kt_jvm_test(
+    name = "SessionStateTest",
+    size = "small",
+    srcs = ["src/test/java/andersonstacy/workout/domain/SessionStateTest.kt"],
+    test_class = PACKAGE + ".domain.SessionStateTest",
+    deps = [":domain"] + TEST_DEPS,
+)
+
+kt_jvm_test(
+    name = "DurationFormatTest",
+    size = "small",
+    srcs = ["src/test/java/andersonstacy/workout/presentation/session/DurationFormatTest.kt"],
+    # formatDuration is internal, so this test has to be part of the module.
+    associates = [":lib"],
+    test_class = PACKAGE + ".presentation.session.DurationFormatTest",
+    deps = TEST_DEPS,
+)
