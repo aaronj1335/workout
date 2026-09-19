@@ -1,4 +1,31 @@
 <resources>
     <string name="app_name">Workout</string>
-    <string name="hello_world">Hello, %1$s!</string>
+
+    <!-- Workout list -->
+    <string name="workouts_title">Workouts</string>
+    <plurals name="step_count">
+        <item quantity="one">%d step</item>
+        <item quantity="other">%d steps</item>
+    </plurals>
+    <string name="offline_notice">Offline · showing saved workouts</string>
+    <string name="refresh">Refresh</string>
+    <string name="retry">Retry</string>
+    <string name="load_error_title">Couldn\'t load workouts</string>
+    <string name="load_error_network">Check your connection</string>
+    <string name="load_error_data">The workout list couldn\'t be read</string>
+    <string name="empty_title">No workouts yet</string>
+    <string name="empty_body">Add one to the workouts folder in the repo</string>
+
+    <!-- Workout detail -->
+    <string name="start">Start</string>
+    <string name="workout_missing">That workout is no longer in the list</string>
+
+    <!-- Session -->
+    <string name="step_progress">Step %1$d of %2$d</string>
+    <string name="reps">×%d</string>
+    <string name="done">Done</string>
+    <string name="finish">Finish</string>
+    <string name="previous_step">Previous step</string>
+    <string name="complete_title">%s complete</string>
+    <string name="complete_summary">%1$s · %2$s</string>
 </resources>

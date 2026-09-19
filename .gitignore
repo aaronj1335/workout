@@ -13,3 +13,11 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# The wrapper jar has to be committed or a fresh clone cannot build; a global
+# ignore rule for *.jar would otherwise leave it out.
+!gradle/wrapper/gradle-wrapper.jar
+
+# Compiled workout data (built by tools/build-workouts.mjs)
+dist/
+node_modules/
