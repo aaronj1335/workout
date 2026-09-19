@@ -9,7 +9,7 @@ publishes it on GitHub Pages; the watch fetches that file and caches it so it wo
 workouts/*.yaml  ──(GitHub Action)──▶  workouts.json on GitHub Pages  ──(HTTPS)──▶  watch app
 ```
 
-Published data: <https://aaronj1335.github.io/workout/workouts.json>
+Published data: <https://aaronstacy.com/workout/workouts.json>
 
 | Workouts | Preview | Step | Complete |
 |---|---|---|---|
@@ -38,18 +38,21 @@ steps:                         # required, at least one
     notes: Lead with the outside foot   # optional, shown under the rep count
 ```
 
-Open a pull request: CI validates every file against [`tools/workout.schema.json`](tools/workout.schema.json)
-and fails with the offending file and field. Merging to `main` recompiles and redeploys, and the
-watch picks it up on the next refresh.
+Open a pull request: CI validates every file and fails with the offending file and field
+(`workouts/plank.yaml: /steps/0/reps must be an integer`). Merging to `main` recompiles and
+redeploys, and the watch picks it up on the next refresh.
 
-Keep names short — they have to be readable on a watch face at arm's length. The schema caps
-workout names at 40 characters and step names at 60.
+Keep names short — they have to be readable on a watch face at arm's length. Workout names are
+capped at 40 characters, step names at 60, and descriptions and notes at 120; reps must be a whole
+number from 1 to 999. Unknown keys are an error, so a typo cannot silently drop a field. The
+compiler ([`tools/`](tools/)) is Kotlin, reads the files into the app's own catalog model, and
+writes them back out as JSON.
 
 ## Building
 
 Everything is built with [Bazel](https://bazel.build); install
 [Bazelisk](https://github.com/bazelbuild/bazelisk) (`brew install bazelisk`) and it fetches the
-Bazel version in `.bazelversion`, a JDK, Node, and the Android SDK on first use. Nothing else needs
+Bazel version in `.bazelversion`, a JDK, the Kotlin compiler, and the Android SDK on first use. Nothing else needs
 to be installed, Android Studio included.
 
 ```bash
@@ -67,7 +70,8 @@ bazel build //workouts:dist   # bazel-bin/workouts/dist/{workouts.json,index.htm
 checks it without writing anything. To run the compiler by hand:
 
 ```bash
-bazel run //tools:build_workouts -- --check --source /path/to/workouts
+bazel run //tools:build_workouts -- --check /path/to/workouts      # or individual .yaml files
+bazel run //tools:build_workouts -- --out /tmp/dist /path/to/workouts
 ```
 
 ### The app
@@ -92,12 +96,10 @@ bazel test //app/...
 
 ### Updating dependencies
 
-- Maven (`MODULE.bazel`): edit the artifact list, then `REPIN=1 bazel run @maven//:pin` to refresh
-  `maven_install.json`. Transitive androidx dependencies are pinned explicitly because androidx
-  publishes exact-version constraints between its own artifacts, which the resolver cannot
-  otherwise reconcile.
-- npm (`tools/package.json`): `bazel run @pnpm//:pnpm -- --dir "$PWD/tools" install --lockfile-only`
-  to refresh `tools/pnpm-lock.yaml`.
+Maven (`MODULE.bazel`): edit the artifact list, then `REPIN=1 bazel run @maven//:pin` to refresh
+`maven_install.json`. Transitive androidx dependencies are pinned explicitly because androidx
+publishes exact-version constraints between its own artifacts, which the resolver cannot
+otherwise reconcile.
 
 ## Running it on an emulator
 
@@ -116,3 +118,7 @@ not there. Then `adb install -r bazel-bin/app/app.apk`.
 
 GitHub Pages must be enabled for the deploy job to succeed:
 **Settings → Pages → Source: GitHub Actions**.
+
+The app fetches from the custom domain (`aaronstacy.com`) directly. The `github.io` address
+redirects there over plain HTTP, which release builds refuse, so turn on **Enforce HTTPS** on the
+same settings page if the app is ever pointed back at `github.io`.

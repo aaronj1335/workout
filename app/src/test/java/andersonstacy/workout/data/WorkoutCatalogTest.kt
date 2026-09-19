@@ -6,7 +6,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Test
 
-/** The shape here has to match what `tools/build-workouts.mjs` emits. */
+/** The shape here has to match what `//tools:build_workouts` emits. */
 class WorkoutCatalogTest {
 
     @Test

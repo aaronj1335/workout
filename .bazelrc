@@ -17,9 +17,6 @@ build --define=android_standalone_dexing_tool=d8_compat_dx
 # jdeps are only useful for strict-deps checking, which we do not use.
 build --@rules_kotlin//kotlin/settings:jvm_emit_jdeps=False
 
-# aspect_rules_js phones home with ruleset usage by default; keep builds offline.
-common --repo_env=ASPECT_TOOLS_TELEMETRY=0
-
 test --test_output=errors
 
 # Local overrides (not checked in).

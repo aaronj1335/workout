@@ -2,12 +2,6 @@
 /bazel-*
 /.bazelrc.user
 
-# Node (the hermetic build never writes this; only a stray `npm install` does)
-node_modules/
-
-# Output of running tools/build-workouts.mjs outside Bazel
-dist/
-
 # IDEs and OS
 *.iml
 /.idea/caches

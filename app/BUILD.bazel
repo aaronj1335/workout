@@ -17,6 +17,8 @@ kt_jvm_library(
     srcs = glob(["src/main/java/andersonstacy/workout/data/*.kt"]),
     module_name = "app",
     plugins = ["//:serialization_plugin"],
+    # The catalog compiler writes this model, so the two cannot drift apart.
+    visibility = ["//tools:__pkg__"],
     deps = [
         "@maven//:com_squareup_okhttp3_okhttp",
         "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_core",

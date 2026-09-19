@@ -143,6 +143,7 @@
     "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm": -1029934200,
     "org.jetbrains:annotations": -628031479,
     "org.jspecify:jspecify": -382205121,
+    "org.yaml:snakeyaml": -320766088,
     "repositories": 1670674627
   },
   "__RESOLVED_ARTIFACTS_HASH": {
@@ -296,7 +297,8 @@
     "org.jetbrains.kotlinx:kotlinx-serialization-json": 1759686674,
     "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm": -546824625,
     "org.jetbrains:annotations": -1663747638,
-    "org.jspecify:jspecify": 117231129
+    "org.jspecify:jspecify": 117231129,
+    "org.yaml:snakeyaml": 1218201193
   },
   "artifacts": {
     "androidx.activity:activity-compose:aar": {
@@ -1204,6 +1206,12 @@
         "jar": "1fad6e6be7557781e4d33729d49ae1cdc8fdda6fe477bb0cc68ce351eafdfbab"
       },
       "version": "1.0.0"
+    },
+    "org.yaml:snakeyaml": {
+      "shasums": {
+        "jar": "ef779af5d29a9dde8cc70ce0341f5c6f7735e23edff9685ceaa9d35359b7bb7f"
+      },
+      "version": "2.4"
     }
   },
   "dependencies": {
@@ -2335,6 +2343,30 @@
     ],
     "org.jspecify:jspecify": [
       "org.jspecify.annotations"
+    ],
+    "org.yaml:snakeyaml": [
+      "org.yaml.snakeyaml",
+      "org.yaml.snakeyaml.comments",
+      "org.yaml.snakeyaml.composer",
+      "org.yaml.snakeyaml.constructor",
+      "org.yaml.snakeyaml.emitter",
+      "org.yaml.snakeyaml.env",
+      "org.yaml.snakeyaml.error",
+      "org.yaml.snakeyaml.events",
+      "org.yaml.snakeyaml.extensions.compactnotation",
+      "org.yaml.snakeyaml.external.com.google.gdata.util.common.base",
+      "org.yaml.snakeyaml.inspector",
+      "org.yaml.snakeyaml.internal",
+      "org.yaml.snakeyaml.introspector",
+      "org.yaml.snakeyaml.nodes",
+      "org.yaml.snakeyaml.parser",
+      "org.yaml.snakeyaml.reader",
+      "org.yaml.snakeyaml.representer",
+      "org.yaml.snakeyaml.resolver",
+      "org.yaml.snakeyaml.scanner",
+      "org.yaml.snakeyaml.serializer",
+      "org.yaml.snakeyaml.tokens",
+      "org.yaml.snakeyaml.util"
     ]
   },
   "repositories": {
@@ -2489,7 +2521,8 @@
       "org.jetbrains.kotlinx:kotlinx-serialization-json",
       "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm",
       "org.jetbrains:annotations",
-      "org.jspecify:jspecify"
+      "org.jspecify:jspecify",
+      "org.yaml:snakeyaml"
     ],
     "https://repo1.maven.org/maven2/": [
       "androidx.activity:activity-compose:aar",
@@ -2642,7 +2675,8 @@
       "org.jetbrains.kotlinx:kotlinx-serialization-json",
       "org.jetbrains.kotlinx:kotlinx-serialization-json-jvm",
       "org.jetbrains:annotations",
-      "org.jspecify:jspecify"
+      "org.jspecify:jspecify",
+      "org.yaml:snakeyaml"
     ]
   },
   "services": {

@@ -1,40 +1,56 @@
-load("@aspect_rules_js//js:defs.bzl", "js_binary", "js_library", "js_test")
-load("@npm//:defs.bzl", "npm_link_all_packages")
+load("@rules_java//java:defs.bzl", "java_binary")
+load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library", "kt_jvm_test")
 
-npm_link_all_packages()
+PACKAGE = "andersonstacy.workout.tools"
 
-js_library(
+# Reads workouts/*.yaml into the app's own catalog model (//app:data), so the
+# JSON it writes is by construction the shape the watch parses.
+kt_jvm_library(
     name = "build_workouts_lib",
-    srcs = [
-        "build-workouts.mjs",
-        "workout.schema.json",
-    ],
+    srcs = glob(["src/main/java/**/*.kt"]),
     deps = [
-        ":node_modules/ajv",
-        ":node_modules/js-yaml",
+        "//app:data",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_serialization_json",
+        "@maven//:org_yaml_snakeyaml",
     ],
 )
 
 # Compiles workouts/*.yaml into workouts.json (+ index.html). See //workouts:dist.
-js_binary(
+java_binary(
     name = "build_workouts",
-    data = [":build_workouts_lib"],
-    entry_point = "build-workouts.mjs",
+    main_class = PACKAGE + ".MainKt",
     visibility = ["//workouts:__pkg__"],
+    runtime_deps = [":build_workouts_lib"],
 )
 
-# Validates every workout against workout.schema.json without writing anything.
-js_test(
+TEST_DEPS = [
+    ":build_workouts_lib",
+    "//app:data",
+    "@maven//:junit_junit",
+]
+
+kt_jvm_test(
+    name = "WorkoutFileTest",
+    size = "small",
+    srcs = ["src/test/java/andersonstacy/workout/tools/WorkoutFileTest.kt"],
+    test_class = PACKAGE + ".WorkoutFileTest",
+    deps = TEST_DEPS,
+)
+
+kt_jvm_test(
+    name = "WorkoutCatalogBuilderTest",
+    size = "small",
+    srcs = ["src/test/java/andersonstacy/workout/tools/WorkoutCatalogBuilderTest.kt"],
+    test_class = PACKAGE + ".WorkoutCatalogBuilderTest",
+    deps = TEST_DEPS + ["@maven//:org_jetbrains_kotlinx_kotlinx_serialization_json"],
+)
+
+# Validates every checked-in workout without writing anything.
+kt_jvm_test(
     name = "validate_workouts_test",
     size = "small",
-    args = [
-        "--check",
-        "--source",
-        "workouts",
-    ],
-    data = [
-        ":build_workouts_lib",
-        "//workouts",
-    ],
-    entry_point = "build-workouts.mjs",
+    srcs = ["src/test/java/andersonstacy/workout/tools/ValidateWorkoutsTest.kt"],
+    data = ["//workouts"],
+    test_class = PACKAGE + ".ValidateWorkoutsTest",
+    deps = TEST_DEPS,
 )

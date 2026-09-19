@@ -1,7 +1,6 @@
-load("@aspect_rules_js//js:defs.bzl", "js_library", "js_run_binary")
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
-js_library(
+filegroup(
     name = "workouts",
     srcs = glob(
         [
@@ -14,17 +13,15 @@ js_library(
 )
 
 # The files published on GitHub Pages: bazel-bin/workouts/dist/{workouts.json,index.html}
-js_run_binary(
+genrule(
     name = "dist",
     srcs = [":workouts"],
-    args = [
-        "--source",
-        package_name(),
-        "--out",
-        package_name() + "/dist",
+    outs = [
+        "dist/workouts.json",
+        "dist/index.html",
     ],
-    out_dirs = ["dist"],
-    tool = "//tools:build_workouts",
+    cmd = "$(execpath //tools:build_workouts) --out $(RULEDIR)/dist $(SRCS)",
+    tools = ["//tools:build_workouts"],
     visibility = ["//visibility:public"],
 )
 

@@ -7,8 +7,6 @@ bazel_dep(name = "rules_java", version = "9.9.0")
 bazel_dep(name = "rules_kotlin", version = "2.4.20")
 bazel_dep(name = "rules_android", version = "0.7.3")
 bazel_dep(name = "rules_jvm_external", version = "7.1")
-bazel_dep(name = "aspect_rules_js", version = "3.4.1")
-bazel_dep(name = "rules_nodejs", version = "6.7.5")
 
 # ---------------------------------------------------------------------------
 # Android SDK, downloaded on demand so a fresh checkout (or a CI runner) builds
@@ -49,6 +47,8 @@ maven.install(
         # Kotlin compiler plugins. These must match rules_kotlin's compiler.
         "org.jetbrains.kotlin:kotlin-compose-compiler-plugin-embeddable:2.4.20",
         "org.jetbrains.kotlin:kotlin-serialization-compiler-plugin-embeddable:2.4.20",
+        # Tools
+        "org.yaml:snakeyaml:2.4",
         # App
         "androidx.activity:activity-compose:1.9.0",
         "androidx.compose.material:material-icons-core:1.7.7",
@@ -223,22 +223,3 @@ maven.install(
 ]
 
 use_repo(maven, maven = "workout_maven")
-
-# ---------------------------------------------------------------------------
-# Node, for tools/build-workouts.mjs.
-# ---------------------------------------------------------------------------
-node = use_extension("@rules_nodejs//nodejs:extensions.bzl", "node")
-node.toolchain(node_version = "22.20.0")
-
-# Exposes pnpm for updating the lockfile:
-# bazel run @pnpm//:pnpm -- --dir "$PWD/tools" install --lockfile-only
-pnpm = use_extension("@aspect_rules_js//npm:extensions.bzl", "pnpm")
-use_repo(pnpm, "pnpm")
-
-npm = use_extension("@aspect_rules_js//npm:extensions.bzl", "npm")
-npm.npm_translate_lock(
-    name = "npm",
-    pnpm_lock = "//tools:pnpm-lock.yaml",
-    verify_node_modules_ignored = "//:.bazelignore",
-)
-use_repo(npm, "npm")
