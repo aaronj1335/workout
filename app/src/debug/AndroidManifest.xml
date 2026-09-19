@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Debug builds can point at a plain-HTTP workouts.json served from a dev machine. -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="andersonstacy.workout">
 
     <application android:usesCleartextTraffic="true" />
 

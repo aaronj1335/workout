@@ -45,38 +45,59 @@ watch picks it up on the next refresh.
 Keep names short — they have to be readable on a watch face at arm's length. The schema caps
 workout names at 40 characters and step names at 60.
 
-## Building the data locally
+## Building
+
+Everything is built with [Bazel](https://bazel.build); install
+[Bazelisk](https://github.com/bazelbuild/bazelisk) (`brew install bazelisk`) and it fetches the
+Bazel version in `.bazelversion`, a JDK, Node, and the Android SDK on first use. Nothing else needs
+to be installed, Android Studio included.
 
 ```bash
-npm --prefix tools ci
-npm --prefix tools run build   # writes dist/workouts.json and dist/index.html
+bazel test //...          # unit tests, workout validation, and a build of the APK and catalog
+bazel build //app         # bazel-bin/app/app.apk
+bazel build //workouts:dist   # bazel-bin/workouts/dist/{workouts.json,index.html}
 ```
 
-`npm --prefix tools run validate` checks the files without writing anything.
+`.bazelrc` records acceptance of the Android SDK license
+(`ACCEPTED_ANDROID_SDK_LICENSE_VERSION`), which is what lets the SDK download run unattended.
 
-## Building the app
+### The data
 
-Requires Android Studio (for the JDK and Wear OS SDK):
+`bazel build //workouts:dist` compiles the YAML; `bazel test //tools:validate_workouts_test`
+checks it without writing anything. To run the compiler by hand:
 
 ```bash
-JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew :app:assembleDebug
+bazel run //tools:build_workouts -- --check --source /path/to/workouts
 ```
+
+### The app
+
+`bazel build //app` produces a debug APK signed with the standard Android debug key. Add `-c opt`
+for the release variant (which, unlike debug, does not allow cleartext HTTP).
 
 By default the app fetches the published Pages URL. To point a debug build at a local copy:
 
 ```bash
-python3 -m http.server 8000 --directory dist
-JAVA_HOME="..." ./gradlew :app:assembleDebug -PworkoutsUrl=http://10.0.2.2:8000/workouts.json
+python3 -m http.server 8000 --directory bazel-bin/workouts/dist
+bazel build //app --//:workouts_url=http://10.0.2.2:8000/workouts.json
 ```
 
-(`10.0.2.2` is the host machine as seen from an emulator. Debug builds allow cleartext HTTP;
-release builds do not.)
+(`10.0.2.2` is the host machine as seen from an emulator.)
 
 Unit tests cover the catalog parsing, the cache/refresh rules and the session state machine:
 
 ```bash
-JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home" ./gradlew :app:testDebugUnitTest
+bazel test //app/...
 ```
+
+### Updating dependencies
+
+- Maven (`MODULE.bazel`): edit the artifact list, then `REPIN=1 bazel run @maven//:pin` to refresh
+  `maven_install.json`. Transitive androidx dependencies are pinned explicitly because androidx
+  publishes exact-version constraints between its own artifacts, which the resolver cannot
+  otherwise reconcile.
+- npm (`tools/package.json`): `bazel run @pnpm//:pnpm -- --dir "$PWD/tools" install --lockfile-only`
+  to refresh `tools/pnpm-lock.yaml`.
 
 ## Running it on an emulator
 
@@ -89,7 +110,7 @@ emulator -avd pixel_watch5 -no-snapshot -gpu host
 That gives a 454x454 round Wear OS 5.1 device, the same size as a 45 mm Pixel Watch. Two things
 to know: the Wear OS 7.0 (`android-37.0`) image segfaults during boot with emulator 37.1.11, and
 `-no-snapshot` is needed on a fresh AVD or the emulator quits trying to load a snapshot that is
-not there. Then `adb install -r app/build/outputs/apk/debug/app-debug.apk`.
+not there. Then `adb install -r bazel-bin/app/app.apk`.
 
 ## One-time setup
 

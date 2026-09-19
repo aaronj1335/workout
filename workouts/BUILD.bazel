@@ -1,0 +1,34 @@
+load("@aspect_rules_js//js:defs.bzl", "js_library", "js_run_binary")
+load("@bazel_skylib//rules:build_test.bzl", "build_test")
+
+js_library(
+    name = "workouts",
+    srcs = glob(
+        [
+            "*.yaml",
+            "*.yml",
+        ],
+        allow_empty = True,
+    ),
+    visibility = ["//tools:__pkg__"],
+)
+
+# The files published on GitHub Pages: bazel-bin/workouts/dist/{workouts.json,index.html}
+js_run_binary(
+    name = "dist",
+    srcs = [":workouts"],
+    args = [
+        "--source",
+        package_name(),
+        "--out",
+        package_name() + "/dist",
+    ],
+    out_dirs = ["dist"],
+    tool = "//tools:build_workouts",
+    visibility = ["//visibility:public"],
+)
+
+build_test(
+    name = "dist_build_test",
+    targets = [":dist"],
+)

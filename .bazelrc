@@ -1,0 +1,26 @@
+# Use a downloaded JDK so builds do not depend on a locally installed Java.
+common --java_runtime_version=remotejdk_21
+common --tool_java_runtime_version=remotejdk_21
+common --java_language_version=17
+common --tool_java_language_version=17
+
+# The Android SDK is downloaded by hermetic_android_toolchains. Setting this
+# records that the SDK license (https://developer.android.com/studio/terms)
+# has been accepted for that platform version.
+common --repo_env=ACCEPTED_ANDROID_SDK_LICENSE_VERSION=37.0
+
+# Use D8 for dexing, as AGP does.
+build --define=android_dexmerger_tool=d8_dexmerger
+build --define=android_incremental_dexing_tool=d8_dexbuilder
+build --define=android_standalone_dexing_tool=d8_compat_dx
+
+# jdeps are only useful for strict-deps checking, which we do not use.
+build --@rules_kotlin//kotlin/settings:jvm_emit_jdeps=False
+
+# aspect_rules_js phones home with ruleset usage by default; keep builds offline.
+common --repo_env=ASPECT_TOOLS_TELEMETRY=0
+
+test --test_output=errors
+
+# Local overrides (not checked in).
+try-import %workspace%/.bazelrc.user
