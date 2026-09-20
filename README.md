@@ -49,7 +49,7 @@ redeploys, and the watch picks it up on the next refresh.
 Keep names short — they have to be readable on a watch face at arm's length. Workout names are
 capped at 40 characters, step names at 60, and descriptions and notes at 120; reps must be a whole
 number from 1 to 999. Unknown keys are an error, so a typo cannot silently drop a field. The
-compiler ([`tools/`](tools/)) is Kotlin, reads the files into the app's own catalog model, and
+compiler ([`src/andersonstacy/workout/tools/`](src/andersonstacy/workout/tools/)) is Kotlin, reads the files into the app's own catalog model, and
 writes them back out as JSON.
 
 ## Building
@@ -61,7 +61,7 @@ to be installed, Android Studio included.
 
 ```bash
 bazel test //...          # unit tests, workout validation, and a build of the APK and catalog
-bazel build //app         # bazel-bin/app/app.apk
+bazel build //src:app     # bazel-bin/src/app.apk
 bazel build //workouts:dist   # bazel-bin/workouts/dist/{workouts.json,index.html}
 ```
 
@@ -70,17 +70,17 @@ bazel build //workouts:dist   # bazel-bin/workouts/dist/{workouts.json,index.htm
 
 ### The data
 
-`bazel build //workouts:dist` compiles the YAML; `bazel test //tools:validate_workouts_test`
+`bazel build //workouts:dist` compiles the YAML; `bazel test //src:validate_workouts_test`
 checks it without writing anything. To run the compiler by hand:
 
 ```bash
-bazel run //tools:build_workouts -- --check /path/to/workouts      # or individual .yaml files
-bazel run //tools:build_workouts -- --out /tmp/dist /path/to/workouts
+bazel run //src:build_workouts -- --check /path/to/workouts      # or individual .yaml files
+bazel run //src:build_workouts -- --out /tmp/dist /path/to/workouts
 ```
 
 ### The app
 
-`bazel build //app` produces a debug APK signed with the standard Android debug key. Add `-c opt`
+`bazel build //src:app` produces a debug APK signed with the standard Android debug key. Add `-c opt`
 for the release variant (which, unlike debug, does not allow cleartext HTTP). CI builds both on
 every push to `main` and attaches them to the `latest` release.
 
@@ -88,7 +88,7 @@ By default the app fetches the published Pages URL. To point a debug build at a 
 
 ```bash
 python3 -m http.server 8000 --directory bazel-bin/workouts/dist
-bazel build //app --//:workouts_url=http://10.0.2.2:8000/workouts.json
+bazel build //src:app --//:workouts_url=http://10.0.2.2:8000/workouts.json
 ```
 
 (`10.0.2.2` is the host machine as seen from an emulator.)
@@ -96,7 +96,7 @@ bazel build //app --//:workouts_url=http://10.0.2.2:8000/workouts.json
 Unit tests cover the catalog parsing, the cache/refresh rules and the session state machine:
 
 ```bash
-bazel test //app/...
+bazel test //src/...
 ```
 
 ### Updating dependencies
@@ -117,7 +117,7 @@ emulator -avd pixel_watch5 -no-snapshot -gpu host
 That gives a 454x454 round Wear OS 5.1 device, the same size as a 45 mm Pixel Watch. Two things
 to know: the Wear OS 7.0 (`android-37.0`) image segfaults during boot with emulator 37.1.11, and
 `-no-snapshot` is needed on a fresh AVD or the emulator quits trying to load a snapshot that is
-not there. Then `adb install -r bazel-bin/app/app.apk`.
+not there. Then `adb install -r bazel-bin/src/app.apk`.
 
 ## One-time setup
 

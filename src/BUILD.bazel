@@ -1,10 +1,17 @@
 load("@bazel_skylib//rules:build_test.bzl", "build_test")
+load("@rules_java//java:defs.bzl", "java_binary")
 load("@rules_android//android:rules.bzl", "android_binary", "android_library")
 load("@rules_kotlin//kotlin:android.bzl", "kt_android_library")
 load("@rules_kotlin//kotlin:jvm.bzl", "kt_jvm_library", "kt_jvm_test")
 load(":build_config.bzl", "build_config")
 
 PACKAGE = "andersonstacy.workout"
+
+# Sources follow the Bazel/Java convention: package andersonstacy.workout.foo
+# lives in andersonstacy/workout/foo/, with tests next to the code they test.
+PKG_DIR = "andersonstacy/workout"
+
+TEST_SRCS = [PKG_DIR + "/**/*Test.kt"]
 
 # The three libraries below are one Kotlin module (see `associates`: the module
 # name is inherited from :data), split so the pure-Kotlin parts can be unit
@@ -14,11 +21,9 @@ PACKAGE = "andersonstacy.workout"
 
 kt_jvm_library(
     name = "data",
-    srcs = glob(["src/main/java/andersonstacy/workout/data/*.kt"]),
+    srcs = glob([PKG_DIR + "/data/*.kt"], exclude = TEST_SRCS),
     module_name = "app",
     plugins = ["//:serialization_plugin"],
-    # The catalog compiler writes this model, so the two cannot drift apart.
-    visibility = ["//tools:__pkg__"],
     deps = [
         "@maven//:com_squareup_okhttp3_okhttp",
         "@maven//:org_jetbrains_kotlinx_kotlinx_coroutines_core",
@@ -28,7 +33,7 @@ kt_jvm_library(
 
 kt_jvm_library(
     name = "domain",
-    srcs = glob(["src/main/java/andersonstacy/workout/domain/*.kt"]),
+    srcs = glob([PKG_DIR + "/domain/*.kt"], exclude = TEST_SRCS),
     associates = [":data"],
 )
 
@@ -43,19 +48,20 @@ build_config(
 kt_android_library(
     name = "lib",
     srcs = glob(
-        ["src/main/java/**/*.kt"],
-        exclude = [
-            "src/main/java/andersonstacy/workout/data/*.kt",
-            "src/main/java/andersonstacy/workout/domain/*.kt",
+        [PKG_DIR + "/**/*.kt"],
+        exclude = TEST_SRCS + [
+            PKG_DIR + "/data/*.kt",
+            PKG_DIR + "/domain/*.kt",
+            PKG_DIR + "/tools/*.kt",
         ],
     ) + [":build_config"],
     associates = [
         ":data",
         ":domain",
     ],
-    manifest = "src/main/AndroidManifest.xml",
+    manifest = "AndroidManifest.xml",
     plugins = ["//:compose_plugin"],
-    resource_files = glob(["src/main/res/**"]),
+    resource_files = glob(["res/**"]),
     deps = [
         "@maven//:androidx_activity_activity_compose",
         "@maven//:androidx_compose_material_material_icons_core",
@@ -81,7 +87,7 @@ kt_android_library(
 android_library(
     name = "debug_manifest",
     exports_manifest = True,
-    manifest = "src/debug/AndroidManifest.xml",
+    manifest = "AndroidManifest.debug.xml",
 )
 
 config_setting(
@@ -95,7 +101,7 @@ android_binary(
     incremental_dexing = 0,
     # Whole-program dexing does not read minSdkVersion from the manifest.
     dexopts = ["--min-sdk-version=35"],
-    manifest = "src/main/AndroidManifest.xml",
+    manifest = "AndroidManifest.xml",
     visibility = ["//visibility:public"],
     deps = [":lib"] + select({
         ":release": [],
@@ -118,7 +124,7 @@ TEST_DEPS = [
 kt_jvm_test(
     name = "WorkoutCatalogTest",
     size = "small",
-    srcs = ["src/test/java/andersonstacy/workout/data/WorkoutCatalogTest.kt"],
+    srcs = [PKG_DIR + "/data/WorkoutCatalogTest.kt"],
     test_class = PACKAGE + ".data.WorkoutCatalogTest",
     deps = [":data"] + TEST_DEPS,
 )
@@ -126,7 +132,7 @@ kt_jvm_test(
 kt_jvm_test(
     name = "WorkoutRepositoryTest",
     size = "small",
-    srcs = ["src/test/java/andersonstacy/workout/data/WorkoutRepositoryTest.kt"],
+    srcs = [PKG_DIR + "/data/WorkoutRepositoryTest.kt"],
     test_class = PACKAGE + ".data.WorkoutRepositoryTest",
     deps = [":data"] + TEST_DEPS,
 )
@@ -134,7 +140,7 @@ kt_jvm_test(
 kt_jvm_test(
     name = "SessionStateTest",
     size = "small",
-    srcs = ["src/test/java/andersonstacy/workout/domain/SessionStateTest.kt"],
+    srcs = [PKG_DIR + "/domain/SessionStateTest.kt"],
     test_class = PACKAGE + ".domain.SessionStateTest",
     deps = [":domain"] + TEST_DEPS,
 )
@@ -142,9 +148,63 @@ kt_jvm_test(
 kt_jvm_test(
     name = "DurationFormatTest",
     size = "small",
-    srcs = ["src/test/java/andersonstacy/workout/presentation/session/DurationFormatTest.kt"],
+    srcs = [PKG_DIR + "/presentation/session/DurationFormatTest.kt"],
     # formatDuration is internal, so this test has to be part of the module.
     associates = [":lib"],
     test_class = PACKAGE + ".presentation.session.DurationFormatTest",
     deps = TEST_DEPS,
+)
+
+# --- The workout catalog compiler --------------------------------------------
+
+# Reads workouts/*.yaml into the app's own catalog model (:data), so the JSON
+# it writes is by construction the shape the watch parses.
+kt_jvm_library(
+    name = "build_workouts_lib",
+    srcs = glob([PKG_DIR + "/tools/*.kt"], exclude = TEST_SRCS),
+    deps = [
+        ":data",
+        "@maven//:org_jetbrains_kotlinx_kotlinx_serialization_json",
+        "@maven//:org_yaml_snakeyaml",
+    ],
+)
+
+# Compiles workouts/*.yaml into workouts.json (+ index.html). See //workouts:dist.
+java_binary(
+    name = "build_workouts",
+    main_class = PACKAGE + ".tools.MainKt",
+    visibility = ["//workouts:__pkg__"],
+    runtime_deps = [":build_workouts_lib"],
+)
+
+TOOLS_TEST_DEPS = [
+    ":build_workouts_lib",
+    ":data",
+    "@maven//:junit_junit",
+]
+
+kt_jvm_test(
+    name = "WorkoutFileTest",
+    size = "small",
+    srcs = [PKG_DIR + "/tools/WorkoutFileTest.kt"],
+    test_class = PACKAGE + ".tools.WorkoutFileTest",
+    deps = TOOLS_TEST_DEPS,
+)
+
+kt_jvm_test(
+    name = "WorkoutCatalogBuilderTest",
+    size = "small",
+    srcs = [PKG_DIR + "/tools/WorkoutCatalogBuilderTest.kt"],
+    test_class = PACKAGE + ".tools.WorkoutCatalogBuilderTest",
+    deps = TOOLS_TEST_DEPS + ["@maven//:org_jetbrains_kotlinx_kotlinx_serialization_json"],
+)
+
+# Validates every checked-in workout without writing anything.
+kt_jvm_test(
+    name = "validate_workouts_test",
+    size = "small",
+    srcs = [PKG_DIR + "/tools/ValidateWorkoutsTest.kt"],
+    data = ["//workouts"],
+    test_class = PACKAGE + ".tools.ValidateWorkoutsTest",
+    deps = TOOLS_TEST_DEPS,
 )
