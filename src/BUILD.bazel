@@ -97,13 +97,25 @@ config_setting(
 
 android_binary(
     name = "app",
-    # Per-jar dexing cannot see the jars that come in through `associates`.
+    # Dex the whole program in one action; per-jar dexing buys little for a
+    # binary this small.
     incremental_dexing = 0,
     # Whole-program dexing does not read minSdkVersion from the manifest.
     dexopts = ["--min-sdk-version=35"],
     manifest = "AndroidManifest.xml",
     visibility = ["//visibility:public"],
-    deps = [":lib"] + select({
+    # :data and :domain (and their own dependencies: okhttp, kotlinx) reach the
+    # APK through :lib's `associates`, which the dex/desugar aspect does not
+    # follow -- it walks deps, exports and runtime_deps. Listing them here puts
+    # them in its path so their Java 8 bytecode is desugared. Nothing desugars
+    # later: the dexer is dx-compatible and leaves invokedynamic alone, so
+    # without this the APK ships call sites that ART rejects at startup with
+    # "NoSuchMethodError: ... LambdaMetafactory.metafactory".
+    deps = [
+        ":data",
+        ":domain",
+        ":lib",
+    ] + select({
         ":release": [],
         "//conditions:default": [":debug_manifest"],
     }),
@@ -112,6 +124,17 @@ android_binary(
 build_test(
     name = "app_build_test",
     targets = [":app"],
+)
+
+# A jar that misses the desugaring step builds and installs fine and only fails
+# on the watch, so check the dex files that CI is about to publish.
+kt_jvm_test(
+    name = "ApkDesugaringTest",
+    size = "small",
+    srcs = [PKG_DIR + "/ApkDesugaringTest.kt"],
+    data = [":app"],
+    test_class = PACKAGE + ".ApkDesugaringTest",
+    deps = ["@maven//:junit_junit"],
 )
 
 # --- Unit tests --------------------------------------------------------------
