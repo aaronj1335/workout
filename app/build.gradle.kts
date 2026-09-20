@@ -6,9 +6,12 @@ plugins {
 
 // Where the app fetches its workouts from. Override for local testing with
 // ./gradlew :app:assembleDebug -PworkoutsUrl=http://10.0.2.2:8000/workouts.json
+//
+// Use the custom Pages domain directly: the github.io address redirects to it over plain HTTP,
+// which release builds (no cleartext traffic) refuse to follow.
 val workoutsUrl: String =
     providers.gradleProperty("workoutsUrl")
-        .orElse("https://aaronj1335.github.io/workout/workouts.json")
+        .orElse("https://aaronstacy.com/workout/workouts.json")
         .get()
 
 android {
