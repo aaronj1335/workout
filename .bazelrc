@@ -9,6 +9,12 @@ common --tool_java_language_version=17
 # has been accepted for that platform version.
 common --repo_env=ACCEPTED_ANDROID_SDK_LICENSE_VERSION=37.0
 
+# Native libraries in the APK (androidx.graphics.path) are built for the
+# target platform, which otherwise defaults to the host CPU. Pixel Watches
+# are arm64, so pin it or a Linux x86_64 CI build produces an APK the watch
+# refuses with INSTALL_FAILED_NO_MATCHING_ABIS.
+build --android_platforms=@rules_android//:arm64-v8a
+
 # Use D8 for dexing, as AGP does.
 build --define=android_dexmerger_tool=d8_dexmerger
 build --define=android_incremental_dexing_tool=d8_dexbuilder

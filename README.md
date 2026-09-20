@@ -68,6 +68,12 @@ bazel build //workouts:dist   # bazel-bin/workouts/dist/{workouts.json,index.htm
 `.bazelrc` records acceptance of the Android SDK license
 (`ACCEPTED_ANDROID_SDK_LICENSE_VERSION`), which is what lets the SDK download run unattended.
 
+The APK is built for arm64 (`--android_platforms` in `.bazelrc`) whatever the host machine is,
+since Pixel Watches are arm64 and an APK built for the host CPU fails to install with
+`INSTALL_FAILED_NO_MATCHING_ABIS`. The only native code is a prebuilt library inside an androidx
+AAR, so instead of an NDK the build registers a stub C++ toolchain (`tools/android_cc`) that
+satisfies `android_binary` and never runs.
+
 ### The data
 
 `bazel build //workouts:dist` compiles the YAML; `bazel test //src:validate_workouts_test`
