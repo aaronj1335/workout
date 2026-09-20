@@ -11,6 +11,10 @@ workouts/*.yaml  ──(GitHub Action)──▶  workouts.json on GitHub Pages  
 
 Published data: <https://aaronj1335.github.io/workout/workouts.json>
 
+Download the app: every push to `main` rebuilds the APKs and publishes them as the
+[latest release](https://github.com/aaronj1335/workout/releases/tag/latest) (`app-debug.apk` and
+`app-release.apk`). Install with `adb install -r app-release.apk`.
+
 | Workouts | Preview | Step | Complete |
 |---|---|---|---|
 | ![Workout list](docs/screenshots/01-workout-list.png) | ![Workout preview](docs/screenshots/02-workout-preview.png) | ![Session step](docs/screenshots/03-session-step.png) | ![Complete](docs/screenshots/04-session-complete.png) |
@@ -73,7 +77,8 @@ bazel run //tools:build_workouts -- --check --source /path/to/workouts
 ### The app
 
 `bazel build //app` produces a debug APK signed with the standard Android debug key. Add `-c opt`
-for the release variant (which, unlike debug, does not allow cleartext HTTP).
+for the release variant (which, unlike debug, does not allow cleartext HTTP). CI builds both on
+every push to `main` and attaches them to the `latest` release.
 
 By default the app fetches the published Pages URL. To point a debug build at a local copy:
 
