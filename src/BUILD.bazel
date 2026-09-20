@@ -13,16 +13,19 @@ PKG_DIR = "andersonstacy/workout"
 
 TEST_SRCS = [PKG_DIR + "/**/*Test.kt"]
 
-# The three libraries below are one Kotlin module (see `associates`: the module
-# name is inherited from :data), split so the pure-Kotlin parts can be unit
-# tested without an Android runtime.
+# The app is split so the pure-Kotlin parts can be unit tested without an
+# Android runtime. Each library depends on the next through `deps`, not
+# `associates`: nothing here is `internal` across a library boundary, and only
+# deps, exports and runtime_deps are walked by the dex/desugar aspect that
+# rewrites each jar's Java 8 bytecode for ART. A jar reachable only through
+# `associates` is invisible to it and reaches the watch undesugared, where the
+# first lambda it runs throws NoSuchMethodError on LambdaMetafactory.
 
 # --- Pure Kotlin: catalog model, cache/refresh rules and the session state --
 
 kt_jvm_library(
     name = "data",
     srcs = glob([PKG_DIR + "/data/*.kt"], exclude = TEST_SRCS),
-    module_name = "app",
     plugins = ["//:serialization_plugin"],
     deps = [
         "@maven//:com_squareup_okhttp3_okhttp",
@@ -34,7 +37,7 @@ kt_jvm_library(
 kt_jvm_library(
     name = "domain",
     srcs = glob([PKG_DIR + "/domain/*.kt"], exclude = TEST_SRCS),
-    associates = [":data"],
+    deps = [":data"],
 )
 
 # --- The Wear OS app ---------------------------------------------------------
@@ -55,14 +58,12 @@ kt_android_library(
             PKG_DIR + "/tools/*.kt",
         ],
     ) + [":build_config"],
-    associates = [
-        ":data",
-        ":domain",
-    ],
     manifest = "AndroidManifest.xml",
     plugins = ["//:compose_plugin"],
     resource_files = glob(["res/**"]),
     deps = [
+        ":data",
+        ":domain",
         "@maven//:androidx_activity_activity_compose",
         "@maven//:androidx_compose_material_material_icons_core",
         "@maven//:androidx_compose_ui_ui",
@@ -97,25 +98,16 @@ config_setting(
 
 android_binary(
     name = "app",
-    # Dex the whole program in one action; per-jar dexing buys little for a
-    # binary this small.
+    # Dex the whole program in one action. Per-jar dexing would be the more
+    # granular choice, but rules_android hardcodes the per-jar dexer's minimum
+    # API to the tool default (see min_sdk_version.clamp) and drops dexopts it
+    # does not recognise, so those dex files would come out built for API 1.
     incremental_dexing = 0,
     # Whole-program dexing does not read minSdkVersion from the manifest.
     dexopts = ["--min-sdk-version=35"],
     manifest = "AndroidManifest.xml",
     visibility = ["//visibility:public"],
-    # :data and :domain (and their own dependencies: okhttp, kotlinx) reach the
-    # APK through :lib's `associates`, which the dex/desugar aspect does not
-    # follow -- it walks deps, exports and runtime_deps. Listing them here puts
-    # them in its path so their Java 8 bytecode is desugared. Nothing desugars
-    # later: the dexer is dx-compatible and leaves invokedynamic alone, so
-    # without this the APK ships call sites that ART rejects at startup with
-    # "NoSuchMethodError: ... LambdaMetafactory.metafactory".
-    deps = [
-        ":data",
-        ":domain",
-        ":lib",
-    ] + select({
+    deps = [":lib"] + select({
         ":release": [],
         "//conditions:default": [":debug_manifest"],
     }),

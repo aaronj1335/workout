@@ -30,8 +30,8 @@ class ApkDesugaringTest {
         }
 
         assertTrue(
-            "undesugared invokedynamic in ${offenders.joinToString()}: some jar in the APK is " +
-                "reachable only through `associates`, which the dex/desugar aspect does not walk",
+            "undesugared invokedynamic in ${offenders.joinToString()}: some jar in the APK never " +
+                "reached the dex/desugar aspect, which only walks deps, exports and runtime_deps",
             offenders.isEmpty(),
         )
     }
