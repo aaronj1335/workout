@@ -1,6 +1,8 @@
 name: CI
 
-# Builds the APK and the workout catalog and runs every test.
+# Builds the APK and the workout catalog and runs every test. Pushes to main
+# also build the debug and release APKs and publish them as the "latest"
+# GitHub release.
 on:
   push:
     branches: [main]
@@ -21,3 +23,38 @@ jobs:
           disk-cache: ${{ github.workflow }}
           repository-cache: true
       - run: bazel test //...
+
+  release:
+    # Pull requests only need the tests; the APKs are published from main.
+    if: github.event_name != 'pull_request'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+      - uses: bazel-contrib/setup-bazel@0.19.0
+        with:
+          bazelisk-cache: true
+          disk-cache: ${{ github.workflow }}
+          repository-cache: true
+      - name: Build APKs
+        run: |
+          bazel build //app
+          cp bazel-bin/app/app.apk app-debug.apk
+          bazel build -c opt //app
+          cp bazel-bin/app/app.apk app-release.apk
+      - name: Publish latest release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Recreate the rolling "latest" release so its tag and date follow
+          # the commit that produced the APKs.
+          gh release delete latest --cleanup-tag --yes || true
+          gh release create latest app-debug.apk app-release.apk \
+            --target "$GITHUB_SHA" \
+            --title "Latest build" \
+            --notes "Built from ${GITHUB_SHA} by [CI run ${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})."
