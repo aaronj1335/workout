@@ -10,9 +10,12 @@ define_kt_toolchain(
 
 # Where the app fetches its workouts from. Override for local testing with
 # bazel build //app --//:workouts_url=http://10.0.2.2:8000/workouts.json
+#
+# Use the custom Pages domain directly: the github.io address redirects to it over plain HTTP,
+# which release builds (no cleartext traffic) refuse to follow.
 string_flag(
     name = "workouts_url",
-    build_setting_default = "https://aaronj1335.github.io/workout/workouts.json",
+    build_setting_default = "https://aaronstacy.com/workout/workouts.json",
 )
 
 kt_compiler_plugin(

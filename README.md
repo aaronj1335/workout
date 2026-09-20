@@ -9,7 +9,7 @@ publishes it on GitHub Pages; the watch fetches that file and caches it so it wo
 workouts/*.yaml  ──(GitHub Action)──▶  workouts.json on GitHub Pages  ──(HTTPS)──▶  watch app
 ```
 
-Published data: <https://aaronj1335.github.io/workout/workouts.json>
+Published data: <https://aaronstacy.com/workout/workouts.json>
 
 | Workouts | Preview | Step | Complete |
 |---|---|---|---|
