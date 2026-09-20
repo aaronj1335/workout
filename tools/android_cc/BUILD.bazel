@@ -1,0 +1,39 @@
+load("@rules_cc//cc/toolchains:cc_toolchain.bzl", "cc_toolchain")
+load(":cc_toolchain_config.bzl", "cc_toolchain_config")
+
+# A C++ toolchain for Android that cannot compile anything.
+#
+# The APK's native libraries (androidx.graphics.path) arrive prebuilt in an
+# AAR, and rules_android picks the ABI directory from the platform given by
+# --android_platforms (see .bazelrc). android_binary nevertheless insists on
+# resolving a C++ toolchain for that platform, and only ever runs it when
+# there is C++ to link, which this project has none of. Registering this stub
+# satisfies resolution without downloading the NDK.
+#
+# If the app ever grows real native code, replace this with an NDK toolchain
+# (hermetic_android_toolchains has an android.ndk() extension).
+
+filegroup(name = "empty")
+
+cc_toolchain_config(name = "config")
+
+cc_toolchain(
+    name = "cc_toolchain",
+    all_files = ":empty",
+    ar_files = ":empty",
+    as_files = ":empty",
+    compiler_files = ":empty",
+    dwp_files = ":empty",
+    linker_files = ":empty",
+    objcopy_files = ":empty",
+    strip_files = ":empty",
+    toolchain_config = ":config",
+    toolchain_identifier = "android_stub",
+)
+
+toolchain(
+    name = "toolchain",
+    target_compatible_with = ["@platforms//os:android"],
+    toolchain = ":cc_toolchain",
+    toolchain_type = "@rules_cc//cc:toolchain_type",
+)
