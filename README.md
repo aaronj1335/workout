@@ -61,7 +61,8 @@ to be installed, Android Studio included.
 
 ```bash
 bazel test //...          # unit tests, workout validation, and a build of the APK and catalog
-bazel build //app         # bazel-bin/app/app.apk
+bazel build //app         # debug APK: bazel-bin/app/app.apk
+bazel build -c opt //app  # release APK, same path
 bazel build //workouts:dist   # bazel-bin/workouts/dist/{workouts.json,index.html}
 ```
 
@@ -80,9 +81,11 @@ bazel run //tools:build_workouts -- --out /tmp/dist /path/to/workouts
 
 ### The app
 
-`bazel build //app` produces a debug APK signed with the standard Android debug key. Add `-c opt`
-for the release variant (which, unlike debug, does not allow cleartext HTTP). CI builds both on
-every push to `main` and attaches them to the `latest` release.
+`bazel build //app` produces a debug APK signed with the standard Android debug key.
+`bazel build -c opt //app` produces the release variant (which, unlike debug, does not allow
+cleartext HTTP) at the same path, `bazel-bin/app/app.apk`, so copy one aside if you want both.
+It is signed with the same debug key — fine for `adb install`, not for the Play Store. CI builds
+both on every push to `main` and attaches them to the `latest` release.
 
 By default the app fetches the published Pages URL. To point a debug build at a local copy:
 
