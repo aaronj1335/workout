@@ -12,7 +12,7 @@ define_kt_toolchain(
 # bazel build //app --//:workouts_url=http://10.0.2.2:8000/workouts.json
 string_flag(
     name = "workouts_url",
-    build_setting_default = "https://aaronj1335.github.io/workout/workouts.json",
+    build_setting_default = "https://aaronstacy.com/workout/workouts.json",
 )
 
 kt_compiler_plugin(

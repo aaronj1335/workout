@@ -4,7 +4,7 @@ import kotlinx.serialization.Serializable
 
 /**
  * The catalog published at [andersonstacy.workout.BuildConfig.WORKOUTS_URL], compiled from the
- * YAML files in `workouts/` by `tools/build-workouts.mjs`.
+ * YAML files in `workouts/` by `//tools:build_workouts`.
  */
 @Serializable
 data class WorkoutCatalog(
