@@ -156,9 +156,11 @@ private fun StepContent(session: SessionState, onBack: () -> Unit) {
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(top = 2.dp),
         )
-        if (step.notes != null) {
+        // Held in a local: `notes` belongs to another module, so it cannot be smart cast.
+        val notes = step.notes
+        if (notes != null) {
             Text(
-                text = step.notes,
+                text = notes,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
