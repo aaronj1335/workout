@@ -9,7 +9,7 @@ filegroup(
         ],
         allow_empty = True,
     ),
-    visibility = ["//tools:__pkg__"],
+    visibility = ["//src:__pkg__"],
 )
 
 # The files published on GitHub Pages: bazel-bin/workouts/dist/{workouts.json,index.html}
@@ -20,8 +20,8 @@ genrule(
         "dist/workouts.json",
         "dist/index.html",
     ],
-    cmd = "$(execpath //tools:build_workouts) --out $(RULEDIR)/dist $(SRCS)",
-    tools = ["//tools:build_workouts"],
+    cmd = "$(execpath //src:build_workouts) --out $(RULEDIR)/dist $(SRCS)",
+    tools = ["//src:build_workouts"],
     visibility = ["//visibility:public"],
 )
 

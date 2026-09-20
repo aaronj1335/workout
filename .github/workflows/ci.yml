@@ -43,10 +43,10 @@ jobs:
           repository-cache: true
       - name: Build APKs
         run: |
-          bazel build //app
-          cp bazel-bin/app/app.apk app-debug.apk
-          bazel build -c opt //app
-          cp bazel-bin/app/app.apk app-release.apk
+          bazel build //src:app
+          cp bazel-bin/src/app.apk app-debug.apk
+          bazel build -c opt //src:app
+          cp bazel-bin/src/app.apk app-release.apk
       - name: Publish latest release
         env:
           GH_TOKEN: ${{ github.token }}

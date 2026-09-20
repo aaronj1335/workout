@@ -1,6 +1,7 @@
-package andersonstacy.workout.presentation
+package andersonstacy.workout
 
 import android.os.Bundle
+import andersonstacy.workout.presentation.WorkoutNavHost
 import andersonstacy.workout.presentation.theme.WorkoutTheme
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent

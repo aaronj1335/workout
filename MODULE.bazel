@@ -3,6 +3,8 @@
 module(name = "workout")
 
 bazel_dep(name = "bazel_skylib", version = "1.9.2")
+bazel_dep(name = "platforms", version = "1.0.0")
+bazel_dep(name = "rules_cc", version = "0.2.17")
 bazel_dep(name = "rules_java", version = "9.9.0")
 bazel_dep(name = "rules_kotlin", version = "2.4.20")
 bazel_dep(name = "rules_android", version = "0.7.3")
@@ -32,6 +34,11 @@ rules_android_sdk = use_extension(
 override_repo(rules_android_sdk, "androidsdk")
 
 register_toolchains("@androidsdk//:all", dev_dependency = True)
+
+# The APK targets arm64 (--android_platforms in .bazelrc), and android_binary
+# requires a C++ toolchain for that platform even with no native code to
+# build. See tools/android_cc.
+register_toolchains("//tools/android_cc:toolchain")
 
 # ---------------------------------------------------------------------------
 # Maven dependencies for the app, at the versions the Gradle build resolved.
