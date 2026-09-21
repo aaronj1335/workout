@@ -1,0 +1,82 @@
+# Every workout the watch shows, in the order it shows them.
+workouts:
+  - id: agility
+    name: Agility
+    description: Cone and change-of-direction work
+    steps:
+      - name: High knees
+        reps: 2
+        notes: 20 yards
+      - name: Butt kicks
+        reps: 2
+      - name: Carioca
+        reps: 2
+        notes: One pass each direction
+      - name: 5-10-5 shuttle
+        reps: 4
+      - name: T-drill
+        reps: 3
+      - name: Box drill
+        reps: 2
+        notes: Sprint, shuffle, backpedal, shuffle
+      - name: Reaction sprints
+        reps: 6
+
+  - id: dumbbell
+    name: Dumbbell
+    description: Full-body dumbbell circuit
+    steps:
+      - name: Goblet squat
+        reps: 12
+      - name: Romanian deadlift
+        reps: 10
+      - name: Bent-over row
+        reps: 10
+        notes: Flat back, pull to the hip
+      - name: Overhead press
+        reps: 8
+      - name: Floor press
+        reps: 10
+      - name: Farmer carry
+        reps: 2
+        notes: Down and back counts as one
+      - name: Renegade row
+        reps: 8
+        notes: Per side
+      - name: Curl to press
+        reps: 10
+
+  - id: ladder
+    name: Ladder
+    description: Agility-ladder footwork
+    steps:
+      - name: 2 feet in each square
+        reps: 2
+      - name: 2 feet sideways
+        reps: 2
+      - name: Ickey shuffle
+        reps: 2
+      - name: Backwards Ickey
+        reps: 2
+      - name: In and out
+        reps: 2
+      - name: Single leg in and out
+        reps: 2
+      - name: Sideways in and out
+        reps: 2
+      - name: Crossover
+        reps: 2
+      - name: Foot exchange
+        reps: 2
+      - name: Foot behind leg
+        reps: 2
+      - name: Hip twist
+        reps: 2
+      - name: Carioca
+        reps: 2
+      - name: Two-footed hop side to side
+        reps: 2
+      - name: 1-footed hop
+        reps: 2
+      - name: 2 forward, one back
+        reps: 2

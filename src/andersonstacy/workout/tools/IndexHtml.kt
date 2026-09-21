@@ -45,7 +45,7 @@ object IndexHtml {
         }
         append(
             """
-            |    <footer>Generated ${escape(catalog.generatedAt.orEmpty())} from the YAML files in <code>workouts/</code>.</footer>
+            |    <footer>Generated ${escape(catalog.generatedAt.orEmpty())} from <code>workouts/workouts.yaml</code>.</footer>
             |  </body>
             |</html>
             |

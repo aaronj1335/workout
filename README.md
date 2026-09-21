@@ -2,11 +2,12 @@
 
 A standalone Pixel Watch (Wear OS) app that walks you through a workout one step at a time.
 
-Workouts live in this repo as YAML. A GitHub Action compiles them to a single JSON file and
-publishes it on GitHub Pages; the watch fetches that file and caches it so it works offline.
+Workouts live in this repo in one YAML file, `workouts/workouts.yaml`, in the order the watch
+shows them. A GitHub Action compiles that file to a single JSON file and publishes it on GitHub
+Pages; the watch fetches that file and caches it so it works offline.
 
 ```
-workouts/*.yaml  ──(GitHub Action)──▶  workouts.json on GitHub Pages  ──(HTTPS)──▶  watch app
+workouts/workouts.yaml  ──(GitHub Action)──▶  workouts.json on GitHub Pages  ──(HTTPS)──▶  watch app
 ```
 
 Published data: <https://aaronstacy.com/workout/workouts.json>
@@ -29,28 +30,32 @@ If the watch is out of signal the last downloaded list is used:
 
 ## Adding or editing a workout
 
-Add a file to `workouts/`. The file name is the workout's id, so use a lowercase slug
-(`soccer-ladder.yaml` → id `soccer-ladder`).
+Every workout is an entry in the `workouts:` list in
+[`workouts/workouts.yaml`](workouts/workouts.yaml). The list order is the order the watch shows
+them in, so move an entry up to move it up the list.
 
 ```yaml
-name: Soccer Ladder            # required, shown in the watch list
-description: Agility-ladder footwork for soccer   # optional
-
-steps:                         # required, at least one
-  - name: Icky shuffle         # required
-    reps: 2                    # required, integer >= 1
-    notes: Lead with the outside foot   # optional, shown under the rep count
+workouts:
+  - id: soccer-ladder          # required, lowercase slug, unique in the file
+    name: Soccer Ladder        # required, shown in the watch list
+    description: Agility-ladder footwork for soccer   # optional
+    steps:                     # required, at least one
+      - name: Icky shuffle     # required
+        reps: 2                # required, integer >= 1
+        notes: Lead with the outside foot   # optional, shown under the rep count
 ```
 
-Open a pull request: CI validates every file and fails with the offending file and field
-(`workouts/plank.yaml: /steps/0/reps must be an integer`). Merging to `main` recompiles and
-redeploys, and the watch picks it up on the next refresh.
+Open a pull request: CI validates the file and fails with the offending workout and field
+(`workouts/workouts.yaml: /workouts/1/steps/0/reps must be an integer`, where `/workouts/1` is the
+second entry in the list). Merging to `main` recompiles and redeploys, and the watch picks it up
+on the next refresh.
 
 Keep names short — they have to be readable on a watch face at arm's length. Workout names are
 capped at 40 characters, step names at 60, and descriptions and notes at 120; reps must be a whole
-number from 1 to 999. Unknown keys are an error, so a typo cannot silently drop a field. The
-compiler ([`src/andersonstacy/workout/tools/`](src/andersonstacy/workout/tools/)) is Kotlin, reads the files into the app's own catalog model, and
-writes them back out as JSON.
+number from 1 to 999. Unknown keys are an error, so a typo cannot silently drop a field, and two
+workouts cannot share an id. The compiler
+([`src/andersonstacy/workout/tools/`](src/andersonstacy/workout/tools/)) is Kotlin, reads the file
+into the app's own catalog model, and writes it back out as JSON.
 
 ## Building
 
@@ -82,8 +87,8 @@ satisfies `android_binary` and never runs.
 checks it without writing anything. To run the compiler by hand:
 
 ```bash
-bazel run //src:build_workouts -- --check /path/to/workouts      # or individual .yaml files
-bazel run //src:build_workouts -- --out /tmp/dist /path/to/workouts
+bazel run //src:build_workouts -- --check workouts/workouts.yaml   # or the workouts/ directory
+bazel run //src:build_workouts -- --out /tmp/dist workouts/workouts.yaml
 ```
 
 ### The app

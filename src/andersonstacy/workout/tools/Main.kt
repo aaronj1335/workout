@@ -5,12 +5,12 @@ import kotlin.system.exitProcess
 import kotlinx.serialization.json.Json
 
 /**
- * Compiles workout YAML files into the workouts.json the watch fetches from GitHub Pages, plus
+ * Compiles the workout YAML file into the workouts.json the watch fetches from GitHub Pages, plus
  * an index.html so the Pages root is readable. Normally run by Bazel (see //workouts:dist).
  *
  * Usage:
- *   build_workouts --out DIR FILE-OR-DIR...   compile into DIR/workouts.json and DIR/index.html
- *   build_workouts --check FILE-OR-DIR...     validate only, write nothing
+ *   build_workouts --out DIR FILE-OR-DIR   compile into DIR/workouts.json and DIR/index.html
+ *   build_workouts --check FILE-OR-DIR     validate only, write nothing
  */
 fun main(args: Array<String>) {
     var checkOnly = false
@@ -27,21 +27,16 @@ fun main(args: Array<String>) {
         index++
     }
     if (!checkOnly && outputDir == null) usage("either --check or --out DIR is required")
+    if (inputs.size != 1) usage("expected one ${WorkoutsFile.FILE_NAME} (or the directory holding it)")
 
-    // A directory stands for every workout file in it.
-    val files = inputs.flatMap { input ->
-        if (input.isDirectory) {
-            input.listFiles().orEmpty().filter(WorkoutFile::isWorkoutFile).sortedBy(File::getName)
-        } else {
-            listOf(input)
-        }
-    }
+    // A directory stands for the workout file in it.
+    val input = inputs.single().let { if (it.isDirectory) File(it, WorkoutsFile.FILE_NAME) else it }
 
-    val catalog = when (val result = WorkoutCatalogBuilder.build(files)) {
+    val catalog = when (val result = WorkoutCatalogBuilder.build(input)) {
         is WorkoutCatalogBuilder.Result.Failure -> {
             System.err.println("${result.problems.size} problem(s) found:\n")
             result.problems.forEach { System.err.println("  $it") }
-            System.err.println("\nSee the README for the expected shape of a workout file.")
+            System.err.println("\nSee the README for the expected shape of the workout file.")
             exitProcess(1)
         }
         is WorkoutCatalogBuilder.Result.Success -> result.catalog
@@ -70,6 +65,6 @@ val CatalogJson: Json = Json {
 
 private fun usage(problem: String): Nothing {
     System.err.println("build_workouts: $problem")
-    System.err.println("usage: build_workouts (--check | --out DIR) FILE-OR-DIR...")
+    System.err.println("usage: build_workouts (--check | --out DIR) FILE-OR-DIR")
     exitProcess(2)
 }

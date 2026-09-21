@@ -9,14 +9,20 @@ import org.yaml.snakeyaml.error.MarkedYAMLException
 import org.yaml.snakeyaml.error.YAMLException
 
 /**
- * Reads one workout YAML file into the app's [Workout] model, checking the same rules the
+ * Reads `workouts/workouts.yaml` into the app's [Workout] model, checking the same rules the
  * README documents: which keys are allowed, which are required, and how long text may be so it
  * still fits on a watch face.
+ *
+ * The workouts are kept in one file, in one list, because the order of that list is the order
+ * they appear on the watch.
  *
  * Every problem in the file is reported, not just the first, so a contributor can fix a pull
  * request in one round.
  */
-object WorkoutFile {
+object WorkoutsFile {
+
+    /** The one file the catalog is compiled from, relative to `workouts/`. */
+    const val FILE_NAME = "workouts.yaml"
 
     const val MAX_NAME_LENGTH = 40
     const val MAX_DESCRIPTION_LENGTH = 120
@@ -24,26 +30,16 @@ object WorkoutFile {
     const val MAX_NOTES_LENGTH = 120
     const val MAX_REPS = 999
 
-    /** Lowercase slug: the file name without its extension is the default. */
+    /** Ids are lowercase slugs: they end up in URLs and in the watch's saved session. */
     val ID_PATTERN = Regex("^[a-z0-9]+(-[a-z0-9]+)*$")
 
+    private val ROOT_KEYS = setOf("workouts")
     private val WORKOUT_KEYS = setOf("id", "name", "description", "steps")
     private val STEP_KEYS = setOf("name", "reps", "notes")
 
-    /** `foo.yaml` and `foo.yml` are both workouts; anything else in the directory is ignored. */
-    fun isWorkoutFile(file: File): Boolean = idFor(file) != null
+    fun read(file: File): Parsed = parse(file.readText())
 
-    fun idFor(file: File): String? =
-        listOf(".yaml", ".yml")
-            .firstOrNull { file.name.endsWith(it) }
-            ?.let { file.name.removeSuffix(it) }
-
-    fun read(file: File): Parsed = parse(file.readText(), idFor(file) ?: file.name)
-
-    /**
-     * @param defaultId used when the document does not set `id`; the file name in practice.
-     */
-    fun parse(yaml: String, defaultId: String): Parsed {
+    fun parse(yaml: String): Parsed {
         val document = try {
             Yaml(LoaderOptions()).load<Any?>(yaml)
         } catch (error: MarkedYAMLException) {
@@ -55,35 +51,69 @@ object WorkoutFile {
         }
 
         val root = document as? Map<*, *>
-            ?: return Parsed.Invalid(listOf("expected a YAML mapping with name and steps"))
+            ?: return Parsed.Invalid(listOf("expected a YAML mapping with a workouts list"))
 
         val problems = mutableListOf<String>()
-        val fields = Fields(root, path = "", problems)
+        Fields(root, path = "", problems).rejectUnknownKeys(ROOT_KEYS)
+        val workouts = workouts(root["workouts"], problems)
+
+        if (problems.isNotEmpty()) return Parsed.Invalid(problems)
+        return Parsed.Valid(checkNotNull(workouts))
+    }
+
+    private fun workouts(value: Any?, problems: MutableList<String>): List<Workout>? {
+        if (value == null) {
+            problems += "/workouts is required"
+            return null
+        }
+        if (value !is List<*>) {
+            problems += "/workouts must be a list"
+            return null
+        }
+        if (value.isEmpty()) {
+            problems += "/workouts must have at least one workout"
+            return null
+        }
+
+        val seenIds = mutableMapOf<String, Int>()
+        val workouts = value.mapIndexedNotNull { index, item ->
+            workout(item, "/workouts/$index", problems)?.also {
+                val duplicate = seenIds.put(it.id, index)
+                if (duplicate != null) {
+                    problems += "/workouts/$index/id \"${it.id}\" is already used by /workouts/$duplicate"
+                }
+            }
+        }
+        return workouts.takeIf { problems.isEmpty() }
+    }
+
+    private fun workout(item: Any?, path: String, problems: MutableList<String>): Workout? {
+        val map = item as? Map<*, *>
+        if (map == null) {
+            problems += "$path must be a mapping with id, name and steps"
+            return null
+        }
+        val fields = Fields(map, path, problems)
         fields.rejectUnknownKeys(WORKOUT_KEYS)
 
-        val id = fields.optionalString("id") ?: defaultId
-        if (!ID_PATTERN.matches(id)) {
-            problems += "/id must be a lowercase slug like \"soccer-ladder\" (got \"$id\")"
+        val id = fields.requiredString("id", MAX_NAME_LENGTH)?.takeIf { slug ->
+            ID_PATTERN.matches(slug).also {
+                if (!it) problems += "$path/id must be a lowercase slug like \"soccer-ladder\" (got \"$slug\")"
+            }
         }
         val name = fields.requiredString("name", MAX_NAME_LENGTH)
         val description = fields.optionalString("description", MAX_DESCRIPTION_LENGTH)
         val steps = fields.steps()
 
-        if (problems.isNotEmpty()) return Parsed.Invalid(problems)
-        return Parsed.Valid(
-            Workout(
-                id = id,
-                name = checkNotNull(name),
-                description = description,
-                steps = checkNotNull(steps),
-            ),
-        )
+        if (id == null || name == null || steps == null) return null
+        return Workout(id = id, name = name, description = description, steps = steps)
     }
 
     sealed interface Parsed {
-        data class Valid(val workout: Workout) : Parsed
+        /** The workouts in the order the file lists them, which is the order on the watch. */
+        data class Valid(val workouts: List<Workout>) : Parsed
 
-        /** Each problem is `<json-pointer> <message>`, e.g. `/steps/2/reps must be an integer`. */
+        /** Each problem is `<json-pointer> <message>`, e.g. `/workouts/2/steps/0/reps must be an integer`. */
         data class Invalid(val problems: List<String>) : Parsed
     }
 

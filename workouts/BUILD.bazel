@@ -2,13 +2,7 @@ load("@bazel_skylib//rules:build_test.bzl", "build_test")
 
 filegroup(
     name = "workouts",
-    srcs = glob(
-        [
-            "*.yaml",
-            "*.yml",
-        ],
-        allow_empty = True,
-    ),
+    srcs = ["workouts.yaml"],
     visibility = ["//src:__pkg__"],
 )
 

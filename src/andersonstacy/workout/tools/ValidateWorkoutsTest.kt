@@ -5,25 +5,26 @@ import java.io.File
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Every file checked in under `workouts/` has to compile, so a bad pull request fails CI. */
+/** The checked-in `workouts/workouts.yaml` has to compile, so a bad pull request fails CI. */
 class ValidateWorkoutsTest {
 
     @Test
     fun `the checked-in workouts are valid`() {
-        val files = workoutsDir().listFiles().orEmpty().filter(WorkoutFile::isWorkoutFile).sortedBy(File::getName)
-        assertTrue("no workout files found in ${workoutsDir()}", files.isNotEmpty())
+        val file = workoutsFile()
+        assertTrue("no workout file at $file", file.isFile)
 
-        val result = WorkoutCatalogBuilder.build(files, displayName = { "workouts/${it.name}" })
+        val result = WorkoutCatalogBuilder.build(file, displayName = { "workouts/${it.name}" })
 
         if (result is Result.Failure) {
-            throw AssertionError(result.problems.joinToString("\n", prefix = "invalid workout files:\n"))
+            throw AssertionError(result.problems.joinToString("\n", prefix = "invalid workout file:\n"))
         }
     }
 
     /** Bazel runs the test from the runfiles root, where `//workouts` is a data dependency. */
-    private fun workoutsDir(): File {
+    private fun workoutsFile(): File {
         val runfiles = System.getenv("TEST_SRCDIR")
         val workspace = System.getenv("TEST_WORKSPACE")
-        return if (runfiles != null && workspace != null) File(File(runfiles, workspace), "workouts") else File("workouts")
+        val dir = if (runfiles != null && workspace != null) File(File(runfiles, workspace), "workouts") else File("workouts")
+        return File(dir, WorkoutsFile.FILE_NAME)
     }
 }
