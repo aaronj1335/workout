@@ -1,0 +1,34 @@
+name: Ladder
+description: Agility-ladder footwork
+
+steps:
+  - name: 2 feet in each square
+    reps: 2
+  - name: 2 feet sideways
+    reps: 2
+  - name: Ickey shuffle
+    reps: 2
+  - name: Backwards Ickey
+    reps: 2
+  - name: In and out
+    reps: 2
+  - name: Single leg in and out
+    reps: 2
+  - name: Sideways in and out
+    reps: 2
+  - name: Crossover
+    reps: 2
+  - name: Foot exchange
+    reps: 2
+  - name: Foot behind leg
+    reps: 2
+  - name: Hip twist
+    reps: 2
+  - name: Carioca
+    reps: 2
+  - name: Two-footed hop side to side
+    reps: 2
+  - name: 1-footed hop
+    reps: 2
+  - name: 2 forward, one back
+    reps: 2
