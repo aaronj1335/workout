@@ -16,17 +16,17 @@ class WorkoutCatalogBuilderTest {
 
     private val dir: File = Files.createTempDirectory("workouts").toFile()
 
-    @After
-    fun cleanUp() {
-        dir.deleteRecursively()
-    }
-
     @Test
-    fun `combines files in the order given`() {
-        val agility = write("agility.yaml", "name: Agility\nsteps: [{name: Sprint, reps: 4}]")
-        val plank = write("plank.yaml", "name: Plank\nsteps: [{name: Hold, reps: 3, notes: 30s}]")
+    fun `keeps the order the file lists`() {
+        val file = write(
+            """
+            workouts:
+              - {id: agility, name: Agility, steps: [{name: Sprint, reps: 4}]}
+              - {id: plank, name: Plank, steps: [{name: Hold, reps: 3, notes: 30s}]}
+            """.trimIndent(),
+        )
 
-        val catalog = success(WorkoutCatalogBuilder.build(listOf(agility, plank), now = Instant.parse("2026-09-19T20:19:37.123Z")))
+        val catalog = success(WorkoutCatalogBuilder.build(file, now = Instant.parse("2026-09-19T20:19:37.123Z")))
 
         assertEquals(WorkoutCatalog.CURRENT_VERSION, catalog.version)
         assertEquals("2026-09-19T20:19:37Z", catalog.generatedAt)
@@ -34,41 +34,25 @@ class WorkoutCatalogBuilderTest {
     }
 
     @Test
-    fun `problems from every file are reported together, prefixed with the file`() {
-        val a = write("a.yaml", "steps: []")
-        val b = write("b.yaml", "name: B\nsteps: [{name: Run, reps: 0}]")
+    fun `problems are prefixed with the file`() {
+        val file = write("workouts:\n  - {id: b, name: B, steps: [{name: Run, reps: 0}]}")
 
-        val problems = failure(WorkoutCatalogBuilder.build(listOf(a, b), displayName = { "workouts/${it.name}" }))
+        val problems = failure(WorkoutCatalogBuilder.build(file, displayName = { "workouts/${it.name}" }))
 
-        assertEquals(
-            listOf(
-                "workouts/a.yaml: /name is required",
-                "workouts/a.yaml: /steps must have at least one step",
-                "workouts/b.yaml: /steps/0/reps must be between 1 and 999",
-            ),
-            problems,
-        )
+        assertEquals(listOf("workouts/workouts.yaml: /workouts/0/steps/0/reps must be between 1 and 999"), problems)
     }
 
     @Test
-    fun `two files cannot claim the same id`() {
-        val first = write("ladder.yaml", "name: Ladder\nsteps: [{name: Run, reps: 1}]")
-        val second = write("other.yaml", "id: ladder\nname: Other\nsteps: [{name: Run, reps: 1}]")
+    fun `a missing file is a failure rather than an empty catalog`() {
+        val missing = File(dir, "nope.yaml")
 
-        val problems = failure(WorkoutCatalogBuilder.build(listOf(first, second), displayName = File::getName))
-
-        assertEquals(listOf("other.yaml: id \"ladder\" is already used by ladder.yaml"), problems)
-    }
-
-    @Test
-    fun `no files is a failure rather than an empty catalog`() {
-        assertEquals(listOf("no workout files given"), failure(WorkoutCatalogBuilder.build(emptyList())))
+        assertEquals(listOf("${missing.path}: no such file"), failure(WorkoutCatalogBuilder.build(missing)))
     }
 
     @Test
     fun `the written JSON is what the watch reads`() {
-        val file = write("plank.yaml", "name: Plank\nsteps: [{name: Hold, reps: 3}]")
-        val catalog = success(WorkoutCatalogBuilder.build(listOf(file)))
+        val file = write("workouts:\n  - {id: plank, name: Plank, steps: [{name: Hold, reps: 3}]}")
+        val catalog = success(WorkoutCatalogBuilder.build(file))
 
         val json = CatalogJson.encodeToString(catalog)
 
@@ -77,7 +61,12 @@ class WorkoutCatalogBuilderTest {
         assertEquals(catalog, WorkoutJson.decodeFromString<WorkoutCatalog>(json))
     }
 
-    private fun write(name: String, yaml: String): File = File(dir, name).apply { writeText(yaml) }
+    @After
+    fun cleanUp() {
+        dir.deleteRecursively()
+    }
+
+    private fun write(yaml: String): File = File(dir, WorkoutsFile.FILE_NAME).apply { writeText(yaml) }
 
     private fun success(result: Result) = (result as? Result.Success)?.catalog
         ?: throw AssertionError("expected a catalog, got $result")

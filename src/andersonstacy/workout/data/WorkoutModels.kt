@@ -3,8 +3,8 @@ package andersonstacy.workout.data
 import kotlinx.serialization.Serializable
 
 /**
- * The catalog published at [andersonstacy.workout.BuildConfig.WORKOUTS_URL], compiled from the
- * YAML files in `workouts/` by `//tools:build_workouts`.
+ * The catalog published at [andersonstacy.workout.BuildConfig.WORKOUTS_URL], compiled from
+ * `workouts/workouts.yaml` by `//tools:build_workouts`.
  */
 @Serializable
 data class WorkoutCatalog(

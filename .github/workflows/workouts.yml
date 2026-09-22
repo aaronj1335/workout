@@ -1,6 +1,6 @@
 name: Workouts
 
-# Compiles workouts/*.yaml into workouts.json and publishes it on GitHub Pages.
+# Compiles workouts/workouts.yaml into workouts.json and publishes it on GitHub Pages.
 # Pull requests are validated by the CI workflow; pushes to main deploy.
 on:
   push:

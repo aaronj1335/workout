@@ -1,12 +1,11 @@
 package andersonstacy.workout.tools
 
-import andersonstacy.workout.data.Workout
 import andersonstacy.workout.data.WorkoutCatalog
 import java.io.File
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
-/** Combines the workout files into the one catalog the watch downloads. */
+/** Turns the one workout file into the catalog the watch downloads. */
 object WorkoutCatalogBuilder {
 
     sealed interface Result {
@@ -17,43 +16,26 @@ object WorkoutCatalogBuilder {
     }
 
     /**
-     * @param files read in the order given; sort them first for a stable catalog.
-     * @param displayName how a file is named in problem reports, e.g. relative to the repo root.
+     * @param file the single YAML file; its workouts keep the order they are listed in.
+     * @param displayName how the file is named in problem reports, e.g. relative to the repo root.
      */
     fun build(
-        files: List<File>,
+        file: File,
         now: Instant = Instant.now(),
         displayName: (File) -> String = File::getPath,
     ): Result {
-        val problems = mutableListOf<String>()
-        val workouts = mutableListOf<Workout>()
-        val seenIds = mutableMapOf<String, String>()
+        val label = displayName(file)
+        if (!file.isFile) return Result.Failure(listOf("$label: no such file"))
 
-        if (files.isEmpty()) problems += "no workout files given"
-
-        for (file in files) {
-            val label = displayName(file)
-            when (val parsed = WorkoutFile.read(file)) {
-                is WorkoutFile.Parsed.Invalid -> parsed.problems.mapTo(problems) { "$label: $it" }
-                is WorkoutFile.Parsed.Valid -> {
-                    val workout = parsed.workout
-                    val duplicate = seenIds.put(workout.id, label)
-                    if (duplicate != null) {
-                        problems += "$label: id \"${workout.id}\" is already used by $duplicate"
-                    } else {
-                        workouts += workout
-                    }
-                }
-            }
+        return when (val parsed = WorkoutsFile.read(file)) {
+            is WorkoutsFile.Parsed.Invalid -> Result.Failure(parsed.problems.map { "$label: $it" })
+            is WorkoutsFile.Parsed.Valid -> Result.Success(
+                WorkoutCatalog(
+                    version = WorkoutCatalog.CURRENT_VERSION,
+                    generatedAt = now.truncatedTo(ChronoUnit.SECONDS).toString(),
+                    workouts = parsed.workouts,
+                ),
+            )
         }
-
-        if (problems.isNotEmpty()) return Result.Failure(problems)
-        return Result.Success(
-            WorkoutCatalog(
-                version = WorkoutCatalog.CURRENT_VERSION,
-                generatedAt = now.truncatedTo(ChronoUnit.SECONDS).toString(),
-                workouts = workouts,
-            ),
-        )
     }
 }
